@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>盘点系统</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 10px;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 100%;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  .sync-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 15px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .sync-indicator {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .sync-status.synced {
+    background: rgba(40, 167, 69, 0.3);
+  }
+
+  .sync-status.error {
+    background: rgba(220, 53, 69, 0.3);
+  }
+
+  .input-section {
+    padding: 20px;
+    background: #f8f9fa;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .upc-input {
+    flex: 1;
+    padding: 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+  }
+
+  .upc-input:focus {
+    outline: none;
+    border-color: #4facfe;
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+  }
+
+  .submit-btn {
+    padding: 15px 25px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 80px;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+  }
+
+  .submit-btn:active {
+    transform: translateY(0);
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+
+  .export-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+  }
+
+  .clear-btn {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+    color: white;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+
+  .action-btn:active {
+    transform: translateY(0);
+  }
+
+  .table-container {
+    padding: 0 20px 20px;
+    overflow-x: auto;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
+  .data-table th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 10px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .data-table td {
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 14px;
+  }
+
+  .data-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+
+  .data-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .editable-cell {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    position: relative;
+  }
+
+  .editable-cell:hover {
+    background-color: #e3f2fd !important;
+  }
+
+  .editable-cell.editing {
+    background-color: #fff3e0 !important;
+  }
+
+  .editable-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: inherit;
+    font-weight: inherit;
+    outline: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .upc-cell {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+  }
+
+  .empty-state i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+  }
+
+  /* 模态框样式 */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+  }
+
+  .modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 0;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    animation: modalSlideIn 0.3s ease;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 15px 15px 0 0;
+    text-align: center;
+  }
+
+  .modal-body {
+    padding: 30px 20px;
+    text-align: center;
+  }
+
+  .modal-body h3 {
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 18px;
+  }
+
+  .qty-input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 18px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .qty-input:focus {
+    outline: none;
+    border-color: #4facfe;
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+
+  /* 成功提示 */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 1001;
+    animation: toastSlideIn 0.3s ease;
+  }
+
+  @keyframes toastSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  /* 下拉刷新指示器 */
+  .pull-refresh {
+    position: fixed;
+    top: -60px;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    transition: top 0.3s ease;
+    z-index: 999;
+  }
+
+  .pull-refresh.show {
+    top: 0;
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 480px) {
+    .input-group {
+      flex-direction: column;
+    }
+    
+    .submit-btn {
+      width: 100%;
+    }
+    
+    .action-buttons {
+      flex-direction: column;
+    }
+    
+    .action-btn {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    
+    .data-table th,
+    .data-table td {
+      padding: 10px 5px;
+      font-size: 12px;
+    }
+    
+    .modal-content {
+      width: 95%;
+      margin: 20% auto;
+    }
+  }
+
+  /* 防止选择文本 */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- 下拉刷新指示器 -->
+<div class="pull-refresh" id="pullRefresh">
+  <span>下拉刷新</span>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h2>📱 盘点系统</h2>
+    <p>移动端优化版本</p>
+    <div class="sync-status" id="syncStatus">
+      <span class="sync-indicator">🔄</span>
+      <span class="sync-text">同步中...</span>
+    </div>
+  </div>
+
+  <div class="input-section">
+    <div class="input-group">
+      <input type="text" id="upcInput" class="upc-input" placeholder="输入UPC码 (12位, 8开头)" maxlength="12">
+      <button onclick="processUPC()" class="submit-btn">提交</button>
+    </div>
+    <div class="action-buttons">
+      <button onclick="clearAllData()" class="action-btn clear-btn">🗑️ 清空记录</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table" id="recordTable">
+      <thead>
+        <tr>
+          <th>UPC码</th>
+          <th>型号</th>
+          <th>SKU</th>
+          <th>数量</th>
+          <th>待修</th>
+          <th>报废</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- 数据行将在这里动态生成 -->
+      </tbody>
+    </table>
+    
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div>📦</div>
+      <p>暂无盘点记录</p>
+      <p style="font-size: 12px; margin-top: 5px;">输入UPC码开始盘点</p>
+    </div>
+  </div>
+</div>
+
+<!-- 数量输入模态框 -->
+<div id="qtyModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>输入数量</h3>
+    </div>
+    <div class="modal-body">
+      <h3 id="modelName">型号名称</h3>
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: 600;">正常数量:</label>
+        <input type="number" id="qtyInput" class="qty-input" placeholder="输入正常数量" min="0" value="1">
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: 600;">待修数量:</label>
+        <input type="number" id="repairInput" class="qty-input" placeholder="输入待修数量" min="0" value="0">
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: 600;">报废数量:</label>
+        <input type="number" id="scrapInput" class="qty-input" placeholder="输入报废数量" min="0" value="0">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmQty()">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== 全局变量 ======
+let currentUPC = '';
+let currentModel = '';
+let pullStartY = 0;
+let pullCurrentY = 0;
+let isPulling = false;
+
+// ====== Google Apps Script 配置 ======
+const SCRIPT_CONFIG = {
+  scriptUrl: "https://script.google.com/macros/s/AKfycbwrIBCVIlvD-Vj1Ue88kPwlmoJkPqXdPtcE_6VKnr71D4pms_hhJEk9ceRUn_jwtpYa/exec", // 您的脚本URL
+  sheetName: "Sheet1" // 工作表名称
+};
+
+// ====== 数据缓存 ======
+let modelDB = {};
+let skuDB = {};
+let lastUpdateTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+// ====== 初始化数据库 ======
+function initializeDatabases() {
+  // 模拟型号数据库
+  modelDB = {
+    "800000000001": "型号A",
+    "800000000002": "型号B", 
+    "800000000003": "型号C",
+    "800000000004": "型号D",
+    "800000000005": "型号E"
+  };
+
+  // 模拟SKU数据库 (通过型号匹配)
+  skuDB = {
+    "型号A": "SKU001",
+    "型号B": "SKU002", 
+    "型号C": "SKU003",
+    "型号D": "SKU004",
+    "型号E": "SKU005"
+  };
+}
+
+// ====== 页面加载完成后初始化 ======
+document.addEventListener('DOMContentLoaded', function() {
+  // 初始化数据库
+  initializeDatabases();
+  
+  // 加载本地存储的数据
+  loadLocalData();
+  
+  // 绑定输入框回车事件
+  document.getElementById('upcInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      processUPC();
+    }
+  });
+  
+  // 绑定下拉刷新事件
+  bindPullRefresh();
+  
+  // 防止页面刷新
+  preventPageRefresh();
+});
+
+// ====== 处理UPC输入 ======
+function processUPC() {
+  const upc = document.getElementById("upcInput").value.trim();
+
+  // 校验UPC
+  if (!/^[8]\d{11}$/.test(upc)) {
+    showToast("请输入正确的12位UPC码（必须以8开头）！", "error");
+    return;
+  }
+
+  // 查找型号
+  const model = modelDB[upc] || "未知型号";
+  currentUPC = upc;
+  currentModel = model;
+
+  // 显示数量输入模态框
+  showQtyModal(model);
+}
+
+// ====== 显示数量输入模态框 ======
+function showQtyModal(model) {
+  document.getElementById('modelName').textContent = model;
+  document.getElementById('qtyInput').value = "1";
+  document.getElementById('qtyModal').style.display = 'block';
+  
+  // 聚焦到输入框
+  setTimeout(() => {
+    document.getElementById('qtyInput').focus();
+    document.getElementById('qtyInput').select();
+  }, 100);
+}
+
+// ====== 关闭模态框 ======
+function closeModal() {
+  document.getElementById('qtyModal').style.display = 'none';
+  document.getElementById('upcInput').focus();
+}
+
+// ====== 确认数量 ======
+function confirmQty() {
+  const qty = parseInt(document.getElementById('qtyInput').value) || 0;
+  const repair = parseInt(document.getElementById('repairInput').value) || 0;
+  const scrap = parseInt(document.getElementById('scrapInput').value) || 0;
+  
+  if (qty < 0 || repair < 0 || scrap < 0) {
+    showToast("数量不能为负数！", "error");
+    return;
+  }
+  
+  if (qty === 0 && repair === 0 && scrap === 0) {
+    showToast("至少需要输入一个数量！", "error");
+    return;
+  }
+
+  // 通过型号获取SKU
+  const sku = skuDB[currentModel] || "未知SKU";
+  
+  // 更新表格
+  updateTable(currentUPC, currentModel, sku, qty, repair, scrap);
+  
+  // 保存到本地存储
+  saveToLocal(currentUPC, currentModel, sku, qty, repair, scrap);
+  
+  // 同步到Google Sheets
+  syncToSheet(currentUPC, 'all', null);
+  
+  // 关闭模态框
+  closeModal();
+  
+  // 清空输入框
+  document.getElementById('upcInput').value = "";
+  
+  // 显示成功提示
+  const totalQty = qty + repair + scrap;
+  showToast(`已添加 ${currentModel} 总计${totalQty}件`, "success");
+}
+
+// ====== 更新表格 ======
+function updateTable(upc, model, sku, qty, repair, scrap) {
+  const tableBody = document.getElementById('tableBody');
+  const emptyState = document.getElementById('emptyState');
+  
+  // 检查是否已存在该UPC
+  let existingRow = null;
+  for (let row of tableBody.rows) {
+    if (row.dataset.upc === upc) {
+      existingRow = row;
+      break;
+    }
+  }
+
+  if (existingRow) {
+    // 更新现有行
+    existingRow.cells[3].innerText = qty;
+    existingRow.cells[4].innerText = repair;
+    existingRow.cells[5].innerText = scrap;
+    showToast(`已更新 ${model} 数量`, "success");
+  } else {
+    // 添加新行
+    const newRow = tableBody.insertRow();
+    newRow.dataset.upc = upc;
+    newRow.innerHTML = `
+      <td class="upc-cell">${upc}</td>
+      <td>${model}</td>
+      <td>${sku}</td>
+      <td class="editable-cell" onclick="editCell(this, 'qty', '${upc}')">${qty}</td>
+      <td class="editable-cell" onclick="editCell(this, 'repair', '${upc}')">${repair}</td>
+      <td class="editable-cell" onclick="editCell(this, 'scrap', '${upc}')">${scrap}</td>
+      <td>
+        <button onclick="deleteRow(this)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px;">删除</button>
+      </td>
+    `;
+  }
+  
+  // 隐藏空状态
+  emptyState.style.display = 'none';
+}
+
+// ====== 删除行 ======
+async function deleteRow(button) {
+  if (confirm('确定要删除这条记录吗？')) {
+    const row = button.closest('tr');
+    const upc = row.dataset.upc;
+    
+    updateSyncStatus('syncing', '删除中...');
+    
+    try {
+      // 从本地存储中删除
+      removeFromLocal(upc);
+      
+      // 从表格中删除
+      row.remove();
+      
+      // 同步到Google Sheets
+      await deleteSheetRow(upc);
+      
+      // 检查是否还有数据
+      const tableBody = document.getElementById('tableBody');
+      if (tableBody.rows.length === 0) {
+        document.getElementById('emptyState').style.display = 'block';
+      }
+      
+      updateSyncStatus('synced', '已删除');
+      showToast('记录已删除', "success");
+    } catch (error) {
+      console.error('删除失败:', error);
+      updateSyncStatus('error', '删除失败');
+      showToast('删除失败，请重试', 'error');
+    }
+  }
+}
+
+// ====== 本地存储相关 ======
+function saveToLocal(upc, model, sku, qty, repair, scrap) {
+  let data = JSON.parse(localStorage.getItem('inventoryData') || '{}');
+  data[upc] = { model, sku, qty, repair, scrap };
+  localStorage.setItem('inventoryData', JSON.stringify(data));
+}
+
+function loadLocalData() {
+  const data = JSON.parse(localStorage.getItem('inventoryData') || '{}');
+  const tableBody = document.getElementById('tableBody');
+  const emptyState = document.getElementById('emptyState');
+  
+  if (Object.keys(data).length === 0) {
+    emptyState.style.display = 'block';
+    return;
+  }
+  
+  tableBody.innerHTML = '';
+  for (const [upc, item] of Object.entries(data)) {
+    const row = tableBody.insertRow();
+    row.dataset.upc = upc;
+    row.innerHTML = `
+      <td class="upc-cell">${upc}</td>
+      <td>${item.model}</td>
+      <td>${item.sku || '未知SKU'}</td>
+      <td class="editable-cell" onclick="editCell(this, 'qty', '${upc}')">${item.qty || 0}</td>
+      <td class="editable-cell" onclick="editCell(this, 'repair', '${upc}')">${item.repair || 0}</td>
+      <td class="editable-cell" onclick="editCell(this, 'scrap', '${upc}')">${item.scrap || 0}</td>
+      <td>
+        <button onclick="deleteRow(this)" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px;">删除</button>
+      </td>
+    `;
+  }
+}
+
+function removeFromLocal(upc) {
+  let data = JSON.parse(localStorage.getItem('inventoryData') || '{}');
+  delete data[upc];
+  localStorage.setItem('inventoryData', JSON.stringify(data));
+}
+
+// ====== 下拉刷新功能 ======
+function bindPullRefresh() {
+  let startY = 0;
+  let currentY = 0;
+  let isPulling = false;
+  
+  document.addEventListener('touchstart', function(e) {
+    if (window.scrollY === 0) {
+      startY = e.touches[0].clientY;
+    }
+  });
+  
+  document.addEventListener('touchmove', function(e) {
+    if (window.scrollY === 0 && startY > 0) {
+      currentY = e.touches[0].clientY;
+      const pullDistance = currentY - startY;
+      
+      if (pullDistance > 0 && pullDistance < 100) {
+        isPulling = true;
+        document.getElementById('pullRefresh').style.top = (pullDistance - 60) + 'px';
+        
+        if (pullDistance > 60) {
+          document.getElementById('pullRefresh').innerHTML = '<span>释放刷新</span>';
+        } else {
+          document.getElementById('pullRefresh').innerHTML = '<span>下拉刷新</span>';
+        }
+      }
+    }
+  });
+  
+  document.addEventListener('touchend', function(e) {
+    if (isPulling && window.scrollY === 0) {
+      const pullDistance = currentY - startY;
+      
+      if (pullDistance > 60) {
+        // 执行刷新
+        refreshData();
+      }
+      
+      // 重置状态
+      document.getElementById('pullRefresh').style.top = '-60px';
+      startY = 0;
+      currentY = 0;
+      isPulling = false;
+    }
+  });
+}
+
+// ====== 刷新数据 ======
+function refreshData() {
+  showToast('数据已刷新', "success");
+  // 这里可以添加从服务器获取最新数据的逻辑
+  // 目前只是重新加载本地数据
+  loadLocalData();
+}
+
+// ====== 防止页面刷新 ======
+function preventPageRefresh() {
+  // 防止下拉刷新
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  });
+  
+  // 防止双击缩放
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
+  
+  // 防止页面滚动时的弹性效果
+  document.addEventListener('touchmove', function(e) {
+    if (e.target.closest('.table-container')) {
+      return; // 允许表格滚动
+    }
+    e.preventDefault();
+  }, { passive: false });
+}
+
+// ====== 显示提示消息 ======
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.style.background = type === 'error' ? '#dc3545' : '#28a745';
+  toast.textContent = message;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
+
+// ====== 更新同步状态 ======
+function updateSyncStatus(status, message) {
+  const syncStatus = document.getElementById('syncStatus');
+  const indicator = syncStatus.querySelector('.sync-indicator');
+  const text = syncStatus.querySelector('.sync-text');
+  
+  syncStatus.className = 'sync-status';
+  
+  switch(status) {
+    case 'syncing':
+      indicator.textContent = '🔄';
+      text.textContent = message || '同步中...';
+      break;
+    case 'synced':
+      indicator.textContent = '✅';
+      text.textContent = message || '已同步';
+      syncStatus.classList.add('synced');
+      break;
+    case 'error':
+      indicator.textContent = '❌';
+      text.textContent = message || '同步失败';
+      syncStatus.classList.add('error');
+      break;
+  }
+}
+
+// ====== 内联编辑功能 ======
+function editCell(cell, field, upc) {
+  const currentValue = cell.textContent;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.value = currentValue;
+  input.className = 'editable-input';
+  input.min = '0';
+  
+  cell.classList.add('editing');
+  cell.innerHTML = '';
+  cell.appendChild(input);
+  input.focus();
+  input.select();
+  
+  const saveEdit = () => {
+    const newValue = parseInt(input.value) || 0;
+    cell.textContent = newValue;
+    cell.classList.remove('editing');
+    
+    // 更新本地数据
+    updateLocalData(upc, field, newValue);
+    
+    // 同步到Google Sheets
+    syncToSheet(upc, field, newValue);
+  };
+  
+  const cancelEdit = () => {
+    cell.textContent = currentValue;
+    cell.classList.remove('editing');
+  };
+  
+  input.addEventListener('blur', saveEdit);
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      cancelEdit();
+    }
+  });
+}
+
+// ====== 更新本地数据 ======
+function updateLocalData(upc, field, value) {
+  let data = JSON.parse(localStorage.getItem('inventoryData') || '{}');
+  if (data[upc]) {
+    data[upc][field] = value;
+    localStorage.setItem('inventoryData', JSON.stringify(data));
+  }
+}
+
+// ====== 同步到Google Sheets ======
+async function syncToSheet(upc, field, value) {
+  updateSyncStatus('syncing', '同步中...');
+  
+  try {
+    // 获取所有本地数据
+    const data = JSON.parse(localStorage.getItem('inventoryData') || '{}');
+    
+    // 发送到Google Apps Script
+    const response = await fetch(SCRIPT_CONFIG.scriptUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'update',
+        data: data
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      updateSyncStatus('synced', '已同步');
+    } else {
+      throw new Error(result.message);
+    }
+  } catch (error) {
+    console.error('同步失败:', error);
+    updateSyncStatus('error', '同步失败');
+  }
+}
+
+// ====== 清空Sheet数据 ======
+async function clearSheetData() {
+  const response = await fetch(SCRIPT_CONFIG.scriptUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action: 'clear'
+    })
+  });
+  
+  const result = await response.json();
+  
+  if (result.status !== 'success') {
+    throw new Error(result.message);
+  }
+}
+
+// ====== 删除Sheet中的行 ======
+async function deleteSheetRow(upc) {
+  const response = await fetch(SCRIPT_CONFIG.scriptUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action: 'delete',
+      upc: upc
+    })
+  });
+  
+  const result = await response.json();
+  
+  if (result.status !== 'success') {
+    throw new Error(result.message);
+  }
+}
+
+// ====== Google Sheet 接口 (保留原有功能) ======
+async function sendToSheet(upc, model, sku, qty, repair, scrap) {
+  const sheetId = "YOUR_SHEET_ID"; // <-- 换成你的
+  const apiKey = "YOUR_API_KEY";   // <-- 换成你的
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/盘点!A:F:append?valueInputOption=USER_ENTERED&key=${apiKey}`;
+
+  const body = {
+    values: [[upc, model, sku, qty, repair, scrap]]
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" }
+    });
+    console.log(await res.json());
+  } catch (err) {
+    console.error("写入失败：", err);
+  }
+}
+
+
+// ====== 清空所有记录功能 ======
+async function clearAllData() {
+  const data = JSON.parse(localStorage.getItem('inventoryData') || '{}');
+  if (Object.keys(data).length === 0) {
+    showToast('暂无数据可清空', 'error');
+    return;
+  }
+  
+  // 显示确认对话框
+  const confirmMessage = `确定要清空所有记录吗？\n\n当前共有 ${Object.keys(data).length} 条记录\n此操作不可撤销！`;
+  
+  if (confirm(confirmMessage)) {
+    updateSyncStatus('syncing', '清空中...');
+    
+    try {
+      // 清空Google Sheets数据
+      await clearSheetData();
+      
+      // 清空本地存储
+      localStorage.removeItem('inventoryData');
+      
+      // 清空表格
+      const tableBody = document.getElementById('tableBody');
+      tableBody.innerHTML = '';
+      
+      // 显示空状态
+      document.getElementById('emptyState').style.display = 'block';
+      
+      updateSyncStatus('synced', '已清空');
+      showToast('所有记录已清空', 'success');
+      
+      // 可选：显示统计信息
+      setTimeout(() => {
+        showToast('数据已清空，可以开始新的盘点', 'success');
+      }, 1500);
+    } catch (error) {
+      console.error('清空失败:', error);
+      updateSyncStatus('error', '清空失败');
+      showToast('清空失败，请重试', 'error');
+    }
+  }
+}
+</script>
+
+</body>
+</html>
