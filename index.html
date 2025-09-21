@@ -289,7 +289,7 @@
     }
     
     .form-group input {
-      font-size: 16px; /* 防止iOS缩放 */
+      font-size: 16px;
     }
   }
 
@@ -617,7 +617,7 @@ function loadLocalData() {
   }
 }
 
-// ====== Google Sheets 同步 ======
+// ====== Google Sheets 同步 (JSONP方式) ======
 function syncToSheet() {
   updateSyncStatus('syncing', '同步中...');
   
