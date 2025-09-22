@@ -439,6 +439,13 @@
       </div>
       <button class="btn" onclick="addRecord()">添加记录</button>
       
+      <!-- SKU输入功能 -->
+      <div class="form-group" style="margin-top: 20px; border-top: 1px solid #e9ecef; padding-top: 15px;">
+        <label for="skuInput">SKU码</label>
+        <input type="text" id="skuInput" placeholder="请输入SKU码进行快速添加">
+        <button class="btn" onclick="addRecordBySKU()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); margin-top: 5px;">通过SKU添加</button>
+      </div>
+      
       <!-- 型号登记功能 -->
       <div class="form-group" style="margin-top: 20px; border-top: 1px solid #e9ecef; padding-top: 15px;">
         <label for="modelSearchForReg">📝 型号登记</label>
@@ -460,6 +467,12 @@
       </div>
       
       <button class="btn btn-danger" onclick="clearAllData()" style="margin-top: 10px;">清空所有数据</button>
+      
+      <!-- 产品数据库查看 -->
+      <div class="form-group" style="margin-top: 20px; border-top: 1px solid #e9ecef; padding-top: 15px;">
+        <label>📋 产品数据库</label>
+        <button class="btn" onclick="showProductDatabase()" style="background: linear-gradient(135deg, #607d8b 0%, #455a64 100%); margin-top: 5px;">查看所有产品</button>
+      </div>
     </div>
 
     <div class="data-section">
@@ -574,6 +587,37 @@
     </div>
   </div>
 
+  <!-- 产品数据库模态框 -->
+  <div id="productDatabaseModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; width: 95%; max-width: 800px; max-height: 80%; overflow-y: auto;">
+      <h3 style="margin-bottom: 20px; text-align: center; color: #607d8b;">📋 产品数据库</h3>
+      
+      <div style="margin-bottom: 15px;">
+        <input type="text" id="productSearchInput" placeholder="搜索产品名称、SKU或UPC码" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+      </div>
+      
+      <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead style="position: sticky; top: 0; background: #f8f9fa;">
+            <tr>
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: left; font-weight: 600;">UPC码</th>
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: left; font-weight: 600;">型号</th>
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: left; font-weight: 600;">SKU</th>
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: center; font-weight: 600;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="productDatabaseTableBody">
+            <!-- 产品数据将在这里动态生成 -->
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn" onclick="closeProductDatabase()" style="background: #6c757d;">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <script>
 // ====== 全局变量 ======
 let records = [];
@@ -612,146 +656,268 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ====== 数据库初始化 ======
 function initializeDatabases() {
-  // 型号数据库 (UPC -> 型号)
+  // 型号数据库 (UPC -> 型号) - 基于txt文件数据生成
   modelDB = {
-    '800000000001': '型号A',
-    '800000000002': '型号B',
-    '800000000003': '型号C',
-    '800000000004': '型号D',
-    '800000000005': '型号E'
+    '800000000001': 'AD900 Lite VCI',
+    '800000000002': 'AB101',
+    '800000000003': 'AB4000',
+    '800000000004': 'AD500 自研',
+    '800000000005': 'AD600 自研',
+    '800000000006': 'AD600S',
+    '800000000007': 'AD600S 自研',
+    '800000000008': 'AD600 Elite',
+    '800000000009': 'AD600 Pro',
+    '800000000010': 'AD800BT',
+    '800000000011': 'AD800',
+    '800000000012': 'AD900 BT',
+    '800000000013': 'AL200',
+    '800000000014': 'AL300',
+    '800000000015': 'AL400',
+    '800000000016': 'AL500',
+    '800000000017': 'AL500B',
+    '800000000018': 'AL600',
+    '800000000019': 'AD EU',
+    '800000000020': 'AD900 Lite',
+    '800000000021': 'AD900BT',
+    '800000000022': 'AD Pro 2.0',
+    '800000000023': 'AD Pro',
+    '800000000024': 'BT Mobile Lite',
+    '800000000025': 'BT Mobile Pro',
+    '800000000026': 'BT Mobile Pros',
+    '800000000027': 'BT100',
+    '800000000028': 'BT100W',
+    '800000000029': 'BT20',
+    '800000000030': 'BT200',
+    '800000000031': 'BT30',
+    '800000000032': 'BT300P',
+    '800000000033': 'BT50',
+    '800000000034': 'BT600',
+    '800000000035': 'CarPal',
+    '800000000036': 'M012',
+    '800000000037': 'EC001',
+    '800000000038': 'EC007(白枪)',
+    '800000000039': 'EC007 (黑枪)',
+    '800000000040': 'ECP001 30A',
+    '800000000041': 'ECP001 50A',
+    '800000000042': 'AMP Bank H128',
+    '800000000043': 'AMP Bank H128 Blue',
+    '800000000044': 'H200',
+    '800000000045': 'ITC629',
+    '800000000046': 'JS1200',
+    '800000000047': 'JS1500',
+    '800000000048': 'JS2000',
+    '800000000049': 'JS2000 Pro',
+    '800000000050': 'JS3000',
+    '800000000051': 'AMP Bank M256',
+    '800000000052': 'Phoenix Nano',
+    '800000000053': 'Phoenix Plus 2',
+    '800000000054': 'Phoenix XLink',
+    '800000000055': 'Phoenix Lite 2',
+    '800000000056': 'Phoenix Smart',
+    '800000000057': 'Phoenix MAX',
+    '800000000058': 'Phoenix Lite 3',
+    '800000000059': 'Phoenix Remote',
+    '800000000060': 'Phoenix Scope',
+    '800000000061': 'RLink J2534',
+    '800000000062': 'RLink Lite',
+    '800000000063': 'T-DARTS',
+    '800000000064': 'T-Ninja Pro',
+    '800000000065': 'T-Ninja Pro VCI',
+    '800000000066': 'T-Ninja1000',
+    '800000000067': 'T1200',
+    '800000000068': 'T30A',
+    '800000000069': 'T4000',
+    '800000000070': 'T4000C',
+    '800000000071': 'T90A',
+    '800000000072': 'TB6000 Pro',
+    '800000000073': 'TB8000',
+    '800000000074': 'TC001',
+    '800000000075': 'TC001 Plus',
+    '800000000076': 'TC001(灰)',
+    '800000000077': 'TC002',
+    '800000000078': 'TC002(玫瑰金)',
+    '800000000079': 'TC002C',
+    '800000000080': 'TC002C Duo',
+    '800000000081': 'TC003',
+    '800000000082': 'TC004',
+    '800000000083': 'TC004 Lite Black',
+    '800000000084': 'TC004 Lite Blue',
+    '800000000085': 'TC004 SE',
+    '800000000086': 'TC004 Mini Blue',
+    '800000000087': 'TC005',
+    '800000000088': 'Tesla to J1772',
+    '800000000089': 'Thermal Imager Holder',
+    '800000000090': 'TOP KEY(FCA_BK01)',
+    '800000000091': 'TOP KEY(TOYOTA_BK01)',
+    '800000000092': 'TopScan Lite',
+    '800000000093': 'Topscan Moto',
+    '800000000094': 'Topscan Pro',
+    '800000000095': 'TS001',
+    '800000000096': 'TS004',
+    '800000000097': 'TS006',
+    '800000000098': 'TS006 Pro',
+    '800000000099': 'UltraDiag',
+    '800000000100': 'UltraDiag VCI',
+    '800000000101': 'V1200',
+    '800000000102': 'V2000 Pro',
+    '800000000103': 'V2000 Pros',
+    '800000000104': 'V2200',
+    '800000000105': 'V2200 Plus',
+    '800000000106': 'VS1200',
+    '800000000107': 'VS2000',
+    '800000000108': 'V2200Air',
+    '800000000109': 'V4500 Plus',
+    '800000000110': 'AB2000',
+    '800000000111': 'AB3000',
+    '800000000112': 'AP3000',
+    '800000000113': 'AT001',
+    '800000000114': 'AT002',
+    '800000000115': 'AT003',
+    '800000000116': 'AT004',
+    '800000000117': 'DeepScan',
+    '800000000118': 'GPSR安全警示标贴',
+    '800000000119': 'H128',
+    '800000000120': 'H256',
+    '800000000121': 'M256',
+    '800000000122': 'AD800BT 2',
+    '800000000123': 'M256 蓝色',
+    '800000000124': 'M256 红色',
+    '800000000125': 'M256 蒂芙尼蓝',
+    '800000000126': 'M256 提香红',
+    '800000000127': 'M256 紫色'
   };
 
-  // SKU数据库 (型号 -> SKU)
+  // SKU数据库 (型号 -> SKU) - 基于txt文件数据
   skuDB = {
-  "AD900 Lite VCI": "TD52110291",
-  "AB101": "TD52130054",
-  "AB4000": "TD52130223",
-  "AD500 自研": "TD52110362",
-  "AD600 自研": "TD52110363",
-  "AD600S": "TD52110228",
-  "AD600S 自研": "TD52110361",
-  "AD600 Elite": "TD52110512",
-  "AD600 Pro": "TD52110511",
-  "AD800BT": "TD52110130",
-  "AD800": "TD52110016",
-  "AD900 BT": "TD52110509",
-  "AL200": "C11A009A01",
-  "AL300": "TD52110026",
-  "AL400": "TD52110023",
-  "AL500": "TD52110132",
-  "AL500B": "TD52110325",
-  "AL600": "TD52110326",
-  "AD EU": "TD52110481",
-  "AD900 Lite": "TD52110292",
-  "AD900BT": "TD52110509",
-  "AD Pro 2.0": "TD52110455",
-  "AD Pro": "TD52110019",
-  "BT Mobile Lite": "TD52130075",
-  "BT Mobile Pro": "TD52130044",
-  "BT Mobile Pros": "TD52130089",
-  "BT100": "TD52130053",
-  "BT100W": "TD52130090",
-  "BT20": "TD52130066",
-  "BT200": "TD52130073",
-  "BT30": "TD52130229",
-  "BT300P": "TD52130056",
-  "BT50": "TD52130055",
-  "BT600": "TD52130074",
-  "CarPal": "TD52110437",
-  "M012": "TD521C0048",
-  "EC001": "TD52130095",
-  "EC007（白枪）": "TD60610029",
-  "EC007 （黑枪）": "TD60610022",
-  "ECP001 30A": "TD60630002",
-  "ECP001 50A": "TD60630003",
-  "AMP Bank H128": "AP521D0002",
-  "AMP Bank H128 Blue": "AP521D0005",
-  "H200": "C11A012A03",
-  "ITC629": "C01A047A04",
-  "JS1200": "TD52130049",
-  "JS1500": "TD52130176",
-  "JS2000": "TD52130050",
-  "JS2000 Pro": "TD52130086",
-  "JS3000": "TD52130167",
-  "AMP Bank M256": "AP521D0003",
-  "Phoenix Nano": "TD52110448",
-  "Phoenix Plus 2": "TD52110434",
-  "Phoenix XLink": "TD52110441",
-  "Phoenix Lite 2": "TD52110275",
-  "Phoenix Smart": "TD52110062",
-  "Phoenix MAX": "TD52110063",
-  "Phoenix Lite 3": "TD52110422",
-  "Phoenix Remote": "TD52110076",
-  "Phoenix Scope": "TD52110138",
-  "RLink J2534": "TD52110445",
-  "RLink Lite": "TD52110321",
-  "T-DARTS": "TD52180013",
-  "T-Ninja Pro": "TD52180028",
-  "T-Ninja Pro VCI": "TD52180016",
-  "T-Ninja1000": "TD52110004",
-  "T1200": "TD52130017",
-  "T30A": "TD52130067",
-  "T4000": "TD52130020",
-  "T4000C": "TD52130104",
-  "T90A": "TD52130061",
-  "TB6000 Pro": "TD52130091",
-  "TB8000": "TD52130057",
-  "TC001": "TD52120002",
-  "TC001 Plus": "TD521D0040",
-  "TC001(灰)": "TD521D0005",
-  "TC002": "TD521D0027",
-  "TC002(玫瑰金)": "TD521D0007",
-  "TC002C": "TD521D0041",
-  "TC002C Duo": "TD521D0081",
-  "TC003": "TD521D0022",
-  "TC004": "TD521D0021",
-  "TC004 Lite Black": "TD521D0024",
-  "TC004 Lite Blue": "TD521D0023",
-  "TC004 SE": "TD521D0067",
-  "TC004 Mini Blue": "TD521D0068",
-  "TC005": "TD521D0020",
-  "Tesla to J1772": "TD60630001",
-  "Thermal Imager Holder": "TD521C0059",
-  "TOP KEY（FCA_BK01）": "TD52180004",
-  "TOP KEY（TOYOTA_BK01）": "TD52180007",
-  "TopScan Lite": "TD52110238",
-  "Topscan Moto": "TD520E0009",
-  "Topscan Pro": "TD52110355",
-  "TS001": "TD521D0031",
-  "TS004": "TD521D0036",
-  "TS006": "TD521D0084",
-  "TS006 Pro": "TD521D0083",
-  "UltraDiag": "TD52110476",
-  "UltraDiag VCI": "TD52110244",
-  "V1200": "Z11A012A04",
-  "V2000 Pro": "TD52130024",
-  "V2000 Pros": "TD52130031",
-  "V2200": "TD52130134",
-  "V2200 Plus": "TD52130147",
-  "VS1200": "TD52130181",
-  "VS2000": "TD52130182",
-  "V2200Air": "TD52130236",
-  "V4500 Plus": "TD52130224",
-  "AB2000": "TD52130192",
-  "AB3000": "AP52130011",
-  "AP3000": "AP52130010",
-  "AT001": "AP52130003",
-  "AT002": "AP52130002",
-  "AT003": "AP52130001",
-  "AT004": "AP52130004",
-  "DeepScan": "AP52110001",
-  "GPSR安全警示语标贴": "AP521C0001",
-  "H128": "AP521D0002",
-  "H256": "AP521D0001",
-  "M256": "AP521D0003",
-  "AD800BT 2": "TD52110463",
-  "M256 蓝色": "AP521D0006",
-  "M256 红色": "AP521D0007",
-  "M256 蒂芙尼蓝": "AP521D0008",
-  "M256 提香红": "AP521D0009",
-  "M256 紫色": "AP521D0010",
-};
-
+    'AD900 Lite VCI': 'TD52110291',
+    'AB101': 'TD52130054',
+    'AB4000': 'TD52130223',
+    'AD500 自研': 'TD52110362',
+    'AD600 自研': 'TD52110363',
+    'AD600S': 'TD52110228',
+    'AD600S 自研': 'TD52110361',
+    'AD600 Elite': 'TD52110512',
+    'AD600 Pro': 'TD52110511',
+    'AD800BT': 'TD52110130',
+    'AD800': 'TD52110016',
+    'AD900 BT': 'TD52110509',
+    'AL200': 'C11A009A01',
+    'AL300': 'TD52110026',
+    'AL400': 'TD52110023',
+    'AL500': 'TD52110132',
+    'AL500B': 'TD52110325',
+    'AL600': 'TD52110326',
+    'AD EU': 'TD52110481',
+    'AD900 Lite': 'TD52110292',
+    'AD900BT': 'TD52110509',
+    'AD Pro 2.0': 'TD52110455',
+    'AD Pro': 'TD52110019',
+    'BT Mobile Lite': 'TD52130075',
+    'BT Mobile Pro': 'TD52130044',
+    'BT Mobile Pros': 'TD52130089',
+    'BT100': 'TD52130053',
+    'BT100W': 'TD52130090',
+    'BT20': 'TD52130066',
+    'BT200': 'TD52130073',
+    'BT30': 'TD52130229',
+    'BT300P': 'TD52130056',
+    'BT50': 'TD52130055',
+    'BT600': 'TD52130074',
+    'CarPal': 'TD52110437',
+    'M012': 'TD521C0048',
+    'EC001': 'TD52130095',
+    'EC007(白枪)': 'TD60610029',
+    'EC007 (黑枪)': 'TD60610022',
+    'ECP001 30A': 'TD60630002',
+    'ECP001 50A': 'TD60630003',
+    'AMP Bank H128': 'AP521D0002',
+    'AMP Bank H128 Blue': 'AP521D0005',
+    'H200': 'C11A012A03',
+    'ITC629': 'C01A047A04',
+    'JS1200': 'TD52130049',
+    'JS1500': 'TD52130176',
+    'JS2000': 'TD52130050',
+    'JS2000 Pro': 'TD52130086',
+    'JS3000': 'TD52130167',
+    'AMP Bank M256': 'AP521D0003',
+    'Phoenix Nano': 'TD52110448',
+    'Phoenix Plus 2': 'TD52110434',
+    'Phoenix XLink': 'TD52110441',
+    'Phoenix Lite 2': 'TD52110275',
+    'Phoenix Smart': 'TD52110062',
+    'Phoenix MAX': 'TD52110063',
+    'Phoenix Lite 3': 'TD52110422',
+    'Phoenix Remote': 'TD52110076',
+    'Phoenix Scope': 'TD52110138',
+    'RLink J2534': 'TD52110445',
+    'RLink Lite': 'TD52110321',
+    'T-DARTS': 'TD52180013',
+    'T-Ninja Pro': 'TD52180028',
+    'T-Ninja Pro VCI': 'TD52180016',
+    'T-Ninja1000': 'TD52110004',
+    'T1200': 'TD52130017',
+    'T30A': 'TD52130067',
+    'T4000': 'TD52130020',
+    'T4000C': 'TD52130104',
+    'T90A': 'TD52130061',
+    'TB6000 Pro': 'TD52130091',
+    'TB8000': 'TD52130057',
+    'TC001': 'TD52120002',
+    'TC001 Plus': 'TD521D0040',
+    'TC001(灰)': 'TD521D0005',
+    'TC002': 'TD521D0027',
+    'TC002(玫瑰金)': 'TD521D0007',
+    'TC002C': 'TD521D0041',
+    'TC002C Duo': 'TD521D0081',
+    'TC003': 'TD521D0022',
+    'TC004': 'TD521D0021',
+    'TC004 Lite Black': 'TD521D0024',
+    'TC004 Lite Blue': 'TD521D0023',
+    'TC004 SE': 'TD521D0067',
+    'TC004 Mini Blue': 'TD521D0068',
+    'TC005': 'TD521D0020',
+    'Tesla to J1772': 'TD60630001',
+    'Thermal Imager Holder': 'TD521C0059',
+    'TOP KEY(FCA_BK01)': 'TD52180004',
+    'TOP KEY(TOYOTA_BK01)': 'TD52180007',
+    'TopScan Lite': 'TD52110238',
+    'Topscan Moto': 'TD520E0009',
+    'Topscan Pro': 'TD52110355',
+    'TS001': 'TD521D0031',
+    'TS004': 'TD521D0036',
+    'TS006': 'TD521D0084',
+    'TS006 Pro': 'TD521D0083',
+    'UltraDiag': 'TD52110476',
+    'UltraDiag VCI': 'TD52110244',
+    'V1200': 'Z11A012A04',
+    'V2000 Pro': 'TD52130024',
+    'V2000 Pros': 'TD52130031',
+    'V2200': 'TD52130134',
+    'V2200 Plus': 'TD52130147',
+    'VS1200': 'TD52130181',
+    'VS2000': 'TD52130182',
+    'V2200Air': 'TD52130236',
+    'V4500 Plus': 'TD52130224',
+    'AB2000': 'TD52130192',
+    'AB3000': 'AP52130011',
+    'AP3000': 'AP52130010',
+    'AT001': 'AP52130003',
+    'AT002': 'AP52130002',
+    'AT003': 'AP52130001',
+    'AT004': 'AP52130004',
+    'DeepScan': 'AP52110001',
+    'GPSR安全警示标贴': 'AP521C0001',
+    'H128': 'AP521D0002',
+    'H256': 'AP521D0001',
+    'M256': 'AP521D0003',
+    'AD800BT 2': 'TD52110463',
+    'M256 蓝色': 'AP521D0006',
+    'M256 红色': 'AP521D0007',
+    'M256 蒂芙尼蓝': 'AP521D0008',
+    'M256 提香红': 'AP521D0009',
+    'M256 紫色': 'AP521D0010'
+  };
+}
 
 // ====== 添加记录 ======
 function addRecord() {
@@ -782,6 +948,65 @@ function addRecord() {
   // 显示数量输入模态框
   document.getElementById('qtyModal').style.display = 'block';
   document.getElementById('qtyInput').focus();
+}
+
+// ====== 通过SKU添加记录 ======
+function addRecordBySKU() {
+  const skuInput = document.getElementById('skuInput');
+  const sku = skuInput.value.trim();
+  
+  if (!sku) {
+    showToast('请输入SKU码', 'warning');
+    return;
+  }
+  
+  // 通过SKU找到对应的型号
+  let foundModel = null;
+  for (const [model, modelSku] of Object.entries(skuDB)) {
+    if (modelSku === sku) {
+      foundModel = model;
+      break;
+    }
+  }
+  
+  if (!foundModel) {
+    showToast('未找到对应的型号，请检查SKU码', 'warning');
+    return;
+  }
+  
+  // 通过型号找到对应的UPC码
+  let foundUPC = null;
+  for (const [upc, model] of Object.entries(modelDB)) {
+    if (model === foundModel) {
+      foundUPC = upc;
+      break;
+    }
+  }
+  
+  if (!foundUPC) {
+    showToast('未找到对应的UPC码', 'warning');
+    return;
+  }
+  
+  // 检查是否已存在
+  const existingRecord = records.find(r => r.upc === foundUPC);
+  if (existingRecord) {
+    // 显示重复UPC码模态框
+    showDuplicateModal(existingRecord);
+    return;
+  }
+  
+  currentUPC = foundUPC;
+  currentModel = foundModel;
+  
+  // 显示数量输入模态框
+  document.getElementById('qtyModal').style.display = 'block';
+  document.getElementById('qtyInput').focus();
+  
+  // 清空SKU输入框
+  skuInput.value = '';
+  
+  showToast(`已找到产品: ${foundModel} (${sku})`, 'success');
 }
 
 // ====== 确认数量 ======
@@ -1378,6 +1603,8 @@ function setupKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.id === 'upcInput') {
       addRecord();
+    } else if (e.key === 'Enter' && e.target.id === 'skuInput') {
+      addRecordBySKU();
     } else if (e.key === 'Enter' && e.target.id === 'searchInput') {
       searchAllData();
     } else if (e.key === 'Enter' && e.target.id === 'modelSearchForReg') {
@@ -1404,6 +1631,89 @@ function showToast(message, type = 'success') {
       document.body.removeChild(toast);
     }, 300);
   }, 3000);
+}
+
+// ====== 产品数据库查看 ======
+function showProductDatabase() {
+  const modal = document.getElementById('productDatabaseModal');
+  const tableBody = document.getElementById('productDatabaseTableBody');
+  const searchInput = document.getElementById('productSearchInput');
+  
+  // 生成产品数据表格
+  updateProductDatabaseTable();
+  
+  // 显示模态框
+  modal.style.display = 'block';
+  
+  // 设置搜索功能
+  searchInput.addEventListener('input', function() {
+    updateProductDatabaseTable();
+  });
+}
+
+function updateProductDatabaseTable() {
+  const tableBody = document.getElementById('productDatabaseTableBody');
+  const searchInput = document.getElementById('productSearchInput');
+  const searchTerm = searchInput.value.trim().toLowerCase();
+  
+  let products = [];
+  
+  // 从数据库生成产品列表
+  for (const [upc, model] of Object.entries(modelDB)) {
+    const sku = skuDB[model] || '未知SKU';
+    products.push({ upc, model, sku });
+  }
+  
+  // 应用搜索过滤
+  if (searchTerm) {
+    products = products.filter(product => 
+      product.upc.toLowerCase().includes(searchTerm) ||
+      product.model.toLowerCase().includes(searchTerm) ||
+      product.sku.toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  // 生成表格内容
+  tableBody.innerHTML = products.map(product => `
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #1976d2;">${product.upc}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${product.model}</td>
+      <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #4caf50;">${product.sku}</td>
+      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+        <button onclick="selectProductFromDatabase('${product.upc}', '${product.model}', '${product.sku}')" 
+                style="background: #4facfe; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">
+          选择
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function selectProductFromDatabase(upc, model, sku) {
+  // 关闭产品数据库模态框
+  closeProductDatabase();
+  
+  // 检查是否已存在
+  const existingRecord = records.find(r => r.upc === upc);
+  if (existingRecord) {
+    // 显示重复UPC码模态框
+    showDuplicateModal(existingRecord);
+    return;
+  }
+  
+  // 设置当前产品信息
+  currentUPC = upc;
+  currentModel = model;
+  
+  // 显示数量输入模态框
+  document.getElementById('qtyModal').style.display = 'block';
+  document.getElementById('qtyInput').focus();
+  
+  showToast(`已选择产品: ${model} (${sku})`, 'success');
+}
+
+function closeProductDatabase() {
+  document.getElementById('productDatabaseModal').style.display = 'none';
 }
 
 // ====== 页面可见性变化 ======
