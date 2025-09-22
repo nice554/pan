@@ -225,6 +225,55 @@
     background: #ff5252;
   }
 
+  /* 型号选择结果样式 */
+  .model-result-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .model-result-item:hover {
+    background-color: #f8f9fa;
+  }
+
+  .model-result-item:last-child {
+    border-bottom: none;
+  }
+
+  .model-info {
+    flex: 1;
+  }
+
+  .model-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+  }
+
+  .model-details {
+    font-size: 12px;
+    color: #666;
+  }
+
+  .select-model-btn {
+    background: #4facfe;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .select-model-btn:hover {
+    background: #00f2fe;
+  }
+
   .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -390,13 +439,25 @@
       </div>
       <button class="btn" onclick="addRecord()">添加记录</button>
       
+      <!-- 型号登记功能 -->
+      <div class="form-group" style="margin-top: 20px; border-top: 1px solid #e9ecef; padding-top: 15px;">
+        <label for="modelSearchForReg">📝 型号登记</label>
+        <input type="text" id="modelSearchForReg" placeholder="输入型号部分信息进行搜索">
+        <button class="btn" onclick="searchModelForRegistration()" style="background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%); margin-top: 5px;">搜索型号</button>
+      </div>
+      
+      <!-- 型号选择结果 -->
+      <div id="modelSearchResults" style="display: none; margin-top: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; background: white;">
+        <!-- 搜索结果将在这里显示 -->
+      </div>
+      
       <!-- 搜索功能 -->
       <div class="form-group" style="margin-top: 20px; border-top: 1px solid #e9ecef; padding-top: 15px;">
-        <label for="searchInput">🔍 搜索已盘点物品</label>
-        <input type="text" id="searchInput" placeholder="输入UPC码、型号或SKU进行搜索">
+        <label for="searchInput">🔍 模糊搜索所有数据</label>
+        <input type="text" id="searchInput" placeholder="输入UPC码、型号、SKU或数量进行搜索">
+        <button class="btn" onclick="searchAllData()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); margin-top: 5px;">搜索</button>
+        <button class="btn" onclick="clearSearch()" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); margin-top: 5px;">清除搜索</button>
       </div>
-      <button class="btn" onclick="searchRecords()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">搜索</button>
-      <button class="btn" onclick="clearSearch()" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">清除搜索</button>
       
       <button class="btn btn-danger" onclick="clearAllData()" style="margin-top: 10px;">清空所有数据</button>
     </div>
@@ -409,6 +470,7 @@
       <!-- 搜索状态指示器 -->
       <div id="searchStatus" style="display: none; text-align: center; margin: 10px 0; padding: 8px; background: #e3f2fd; border-radius: 8px; color: #1976d2; font-size: 14px;">
         <span id="searchStatusText"></span>
+        <button onclick="clearAllSearch()" style="margin-left: 10px; background: #ff6b6b; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">清除</button>
       </div>
       
       <table class="data-table" id="recordTable">
@@ -683,7 +745,7 @@ function updateTable() {
   // 更新搜索状态指示器
   if (isSearchMode) {
     const searchTerm = document.getElementById('searchInput').value.trim();
-    searchStatusText.textContent = `🔍 搜索 "${searchTerm}" - 找到 ${searchResults.length} 条记录`;
+    searchStatusText.textContent = `🔍 模糊搜索 "${searchTerm}" - 找到 ${searchResults.length} 条记录`;
     searchStatus.style.display = 'block';
   } else {
     searchStatus.style.display = 'none';
@@ -1048,35 +1110,38 @@ function cancelDuplicate() {
 }
 
 // ====== 搜索功能 ======
-function searchRecords() {
+function searchAllData() {
   const searchInput = document.getElementById('searchInput');
   const searchTerm = searchInput.value.trim().toLowerCase();
-  
+
   if (!searchTerm) {
     showToast('请输入搜索关键词', 'warning');
     return;
   }
-  
+
   if (records.length === 0) {
     showToast('暂无数据可搜索', 'warning');
     return;
   }
-  
-  // 搜索匹配的记录
+
+  // 模糊搜索所有字段
   searchResults = records.filter(record => {
     return record.upc.toLowerCase().includes(searchTerm) ||
            record.model.toLowerCase().includes(searchTerm) ||
-           record.sku.toLowerCase().includes(searchTerm);
+           record.sku.toLowerCase().includes(searchTerm) ||
+           record.qty.toString().includes(searchTerm) ||
+           record.repair.toString().includes(searchTerm) ||
+           record.scrap.toString().includes(searchTerm);
   });
+
+  isSearchMode = true;
+  updateTable();
   
   if (searchResults.length === 0) {
     showToast('未找到匹配的记录', 'warning');
-    return;
+  } else {
+    showToast(`找到 ${searchResults.length} 条匹配记录`, 'success');
   }
-  
-  isSearchMode = true;
-  updateTable();
-  showToast(`找到 ${searchResults.length} 条匹配记录`, 'success');
 }
 
 function clearSearch() {
@@ -1088,11 +1153,79 @@ function clearSearch() {
   showToast('搜索已清除', 'success');
 }
 
+// ====== 型号登记功能 ======
+function searchModelForRegistration() {
+  const modelSearchInput = document.getElementById('modelSearchForReg');
+  const searchTerm = modelSearchInput.value.trim().toLowerCase();
+  const resultsContainer = document.getElementById('modelSearchResults');
+
+  if (!searchTerm) {
+    showToast('请输入型号关键词', 'warning');
+    return;
+  }
+
+  // 从数据库中找到匹配的型号
+  const matchingModels = [];
+  
+  // 搜索modelDB中的型号
+  for (const [upc, model] of Object.entries(modelDB)) {
+    if (model.toLowerCase().includes(searchTerm)) {
+      const sku = skuDB[model] || '未知SKU';
+      matchingModels.push({
+        upc: upc,
+        model: model,
+        sku: sku
+      });
+    }
+  }
+
+  if (matchingModels.length === 0) {
+    showToast('未找到匹配的型号', 'warning');
+    resultsContainer.style.display = 'none';
+    return;
+  }
+
+  // 显示搜索结果
+  resultsContainer.innerHTML = matchingModels.map(item => `
+    <div class="model-result-item">
+      <div class="model-info">
+        <div class="model-name">${item.model}</div>
+        <div class="model-details">UPC: ${item.upc} | SKU: ${item.sku}</div>
+      </div>
+      <button class="select-model-btn" onclick="selectModelForRegistration('${item.upc}', '${item.model}', '${item.sku}')">
+        选择
+      </button>
+    </div>
+  `).join('');
+
+  resultsContainer.style.display = 'block';
+  showToast(`找到 ${matchingModels.length} 个匹配型号`, 'success');
+}
+
+function selectModelForRegistration(upc, model, sku) {
+  // 隐藏搜索结果
+  document.getElementById('modelSearchResults').style.display = 'none';
+  
+  // 清除型号搜索框
+  document.getElementById('modelSearchForReg').value = '';
+  
+  // 设置当前选择的型号信息
+  currentUPC = upc;
+  currentModel = model;
+  
+  // 显示数量输入模态框
+  document.getElementById('qtyModal').style.display = 'block';
+  document.getElementById('qtyInput').focus();
+  
+  showToast(`已选择型号: ${model}`, 'success');
+}
+
 // ====== 搜索输入设置 ======
 function setupSearchInput() {
   const searchInput = document.getElementById('searchInput');
   let searchTimeout;
   
+  // 搜索框事件监听
   searchInput.addEventListener('input', function() {
     const searchTerm = this.value.trim();
     
@@ -1112,26 +1245,11 @@ function setupSearchInput() {
     
     // 延迟搜索，避免频繁搜索
     searchTimeout = setTimeout(() => {
-      performSearch(searchTerm);
+      searchAllData();
     }, 300);
   });
 }
 
-function performSearch(searchTerm) {
-  if (records.length === 0) {
-    return;
-  }
-  
-  // 搜索匹配的记录
-  searchResults = records.filter(record => {
-    return record.upc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           record.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           record.sku.toLowerCase().includes(searchTerm.toLowerCase());
-  });
-  
-  isSearchMode = true;
-  updateTable();
-}
 
 // ====== 键盘快捷键 ======
 function setupKeyboardShortcuts() {
@@ -1139,7 +1257,9 @@ function setupKeyboardShortcuts() {
     if (e.key === 'Enter' && e.target.id === 'upcInput') {
       addRecord();
     } else if (e.key === 'Enter' && e.target.id === 'searchInput') {
-      searchRecords();
+      searchAllData();
+    } else if (e.key === 'Enter' && e.target.id === 'modelSearchForReg') {
+      searchModelForRegistration();
     }
   });
 }
