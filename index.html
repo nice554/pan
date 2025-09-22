@@ -274,6 +274,71 @@
     background: #FF9800;
   }
 
+  /* 搜索高亮样式 */
+  .search-highlight {
+    background: #ffeb3b;
+    color: #333;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  /* 搜索状态指示器 */
+  .search-status {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 4px 8px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* 重复UPC码模态框样式 */
+  #duplicateModal table {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  #duplicateModal table th {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    color: white;
+    font-weight: 600;
+  }
+
+  #duplicateModal table td {
+    transition: background-color 0.2s;
+  }
+
+  #duplicateModal table tr:hover td {
+    background-color: #f8f9fa;
+  }
+
+  /* 模态框动画 */
+  #duplicateModal {
+    animation: fadeIn 0.3s ease;
+  }
+
+  #duplicateModal > div {
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideIn {
+    from { 
+      opacity: 0;
+      transform: translate(-50%, -60%);
+    }
+    to { 
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+  }
+
   @media (max-width: 768px) {
     .data-table {
       font-size: 12px;
@@ -324,12 +389,26 @@
         <input type="text" id="upcInput" placeholder="请输入UPC码" maxlength="12">
       </div>
       <button class="btn" onclick="addRecord()">添加记录</button>
-      <button class="btn btn-danger" onclick="clearAllData()">清空所有数据</button>
+      
+      <!-- 搜索功能 -->
+      <div class="form-group" style="margin-top: 20px; border-top: 1px solid #e9ecef; padding-top: 15px;">
+        <label for="searchInput">🔍 搜索已盘点物品</label>
+        <input type="text" id="searchInput" placeholder="输入UPC码、型号或SKU进行搜索">
+      </div>
+      <button class="btn" onclick="searchRecords()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">搜索</button>
+      <button class="btn" onclick="clearSearch()" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">清除搜索</button>
+      
+      <button class="btn btn-danger" onclick="clearAllData()" style="margin-top: 10px;">清空所有数据</button>
     </div>
 
     <div class="data-section">
       <div class="pull-refresh" id="pullRefresh">
         <div>下拉刷新数据</div>
+      </div>
+      
+      <!-- 搜索状态指示器 -->
+      <div id="searchStatus" style="display: none; text-align: center; margin: 10px 0; padding: 8px; background: #e3f2fd; border-radius: 8px; color: #1976d2; font-size: 14px;">
+        <span id="searchStatusText"></span>
       </div>
       
       <table class="data-table" id="recordTable">
@@ -382,6 +461,57 @@
     </div>
   </div>
 
+  <!-- 重复UPC码模态框 -->
+  <div id="duplicateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px;">
+      <h3 style="margin-bottom: 20px; text-align: center; color: #ff6b6b;">⚠️ UPC码已存在</h3>
+      
+      <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+        <div style="text-align: center; font-weight: 600; color: #856404;">
+          该UPC码已存在于盘点记录中
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+          <thead>
+            <tr style="background: #f8f9fa;">
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">项目</th>
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">信息</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: 600;">UPC码</td>
+              <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace; color: #1976d2;" id="duplicateUPC"></td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: 600;">型号</td>
+              <td style="padding: 10px; border: 1px solid #ddd;" id="duplicateModel"></td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: 600;">SKU</td>
+              <td style="padding: 10px; border: 1px solid #ddd;" id="duplicateSKU"></td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: 600;">当前数量</td>
+              <td style="padding: 10px; border: 1px solid #ddd;" id="duplicateCurrentQty"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="text-align: center; margin-bottom: 20px; color: #666;">
+        是否要修改该物品的数量？
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button class="btn" onclick="modifyDuplicateQty()" style="flex: 1; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">修改数量</button>
+        <button class="btn" onclick="cancelDuplicate()" style="flex: 1; background: #6c757d;">取消</button>
+      </div>
+    </div>
+  </div>
+
   <script>
 // ====== 全局变量 ======
 let records = [];
@@ -390,6 +520,9 @@ let currentModel = '';
 let pullStartY = 0;
 let pullCurrentY = 0;
 let isPulling = false;
+let searchResults = [];
+let isSearchMode = false;
+let duplicateRecord = null;
 
 // ====== Google Apps Script 配置 ======
 const SCRIPT_CONFIG = {
@@ -409,6 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
   updateTable();
   setupPullRefresh();
   setupKeyboardShortcuts();
+  setupSearchInput();
   
   // 自动同步状态检查
   setInterval(checkSyncStatus, 30000); // 每30秒检查一次
@@ -453,7 +587,8 @@ function addRecord() {
   // 检查是否已存在
   const existingRecord = records.find(r => r.upc === upc);
   if (existingRecord) {
-    showToast('该UPC码已存在', 'warning');
+    // 显示重复UPC码模态框
+    showDuplicateModal(existingRecord);
     return;
   }
   
@@ -479,17 +614,33 @@ function confirmQty() {
   const model = modelDB[currentUPC] || '未知型号';
   const sku = skuDB[model] || '未知SKU';
   
-  const newRecord = {
-    upc: currentUPC,
-    model: model,
-    sku: sku,
-    qty: qty,
-    repair: repair,
-    scrap: scrap,
-    timestamp: new Date().toISOString()
-  };
+  // 检查是否是更新现有记录
+  const existingRecordIndex = records.findIndex(r => r.upc === currentUPC);
   
-  records.push(newRecord);
+  if (existingRecordIndex !== -1) {
+    // 更新现有记录
+    records[existingRecordIndex].qty = qty;
+    records[existingRecordIndex].repair = repair;
+    records[existingRecordIndex].scrap = scrap;
+    records[existingRecordIndex].timestamp = new Date().toISOString();
+    
+    showToast('记录更新成功', 'success');
+  } else {
+    // 添加新记录
+    const newRecord = {
+      upc: currentUPC,
+      model: model,
+      sku: sku,
+      qty: qty,
+      repair: repair,
+      scrap: scrap,
+      timestamp: new Date().toISOString()
+    };
+    
+    records.push(newRecord);
+    showToast('记录添加成功', 'success');
+  }
+  
   saveToLocal();
   updateTable();
   syncToSheet();
@@ -503,7 +654,10 @@ function confirmQty() {
   // 隐藏模态框
   document.getElementById('qtyModal').style.display = 'none';
   
-  showToast('记录添加成功', 'success');
+  // 重置变量
+  duplicateRecord = null;
+  currentUPC = '';
+  currentModel = '';
 }
 
 // ====== 取消数量输入 ======
@@ -512,34 +666,82 @@ function cancelQty() {
   document.getElementById('qtyInput').value = '0';
   document.getElementById('repairInput').value = '0';
   document.getElementById('scrapInput').value = '0';
+  
+  // 重置变量
+  duplicateRecord = null;
+  currentUPC = '';
+  currentModel = '';
 }
 
 // ====== 更新表格 ======
 function updateTable() {
   const tableBody = document.getElementById('tableBody');
   const emptyState = document.getElementById('emptyState');
+  const searchStatus = document.getElementById('searchStatus');
+  const searchStatusText = document.getElementById('searchStatusText');
   
-  if (records.length === 0) {
+  // 更新搜索状态指示器
+  if (isSearchMode) {
+    const searchTerm = document.getElementById('searchInput').value.trim();
+    searchStatusText.textContent = `🔍 搜索 "${searchTerm}" - 找到 ${searchResults.length} 条记录`;
+    searchStatus.style.display = 'block';
+  } else {
+    searchStatus.style.display = 'none';
+  }
+  
+  // 确定要显示的数据
+  const dataToShow = isSearchMode ? searchResults : records;
+  
+  if (dataToShow.length === 0) {
     tableBody.innerHTML = '';
+    if (isSearchMode) {
+      emptyState.innerHTML = `
+        <div>🔍</div>
+        <div>未找到匹配的记录</div>
+        <div style="font-size: 12px; margin-top: 10px; color: #999;">
+          请尝试其他搜索关键词
+        </div>
+      `;
+    } else {
+      emptyState.innerHTML = `
+        <div>📦</div>
+        <div>暂无数据</div>
+        <div style="font-size: 12px; margin-top: 10px; color: #999;">
+          输入UPC码开始盘点
+        </div>
+      `;
+    }
     emptyState.style.display = 'block';
     return;
   }
   
   emptyState.style.display = 'none';
   
-  tableBody.innerHTML = records.map(record => `
-    <tr>
-      <td class="upc-cell">${record.upc}</td>
-      <td>${record.model}</td>
-      <td>${record.sku}</td>
-      <td class="editable-cell" onclick="editCell(this, 'qty', '${record.upc}')">${record.qty}</td>
-      <td class="editable-cell" onclick="editCell(this, 'repair', '${record.upc}')">${record.repair}</td>
-      <td class="editable-cell" onclick="editCell(this, 'scrap', '${record.upc}')">${record.scrap}</td>
-      <td>
-        <button class="action-btn" onclick="deleteRecord('${record.upc}')">删除</button>
-      </td>
-    </tr>
-  `).join('');
+  // 获取搜索关键词用于高亮
+  const searchTerm = isSearchMode ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
+  
+  tableBody.innerHTML = dataToShow.map(record => {
+    // 高亮搜索关键词
+    const highlightText = (text, term) => {
+      if (!term) return text;
+      const regex = new RegExp(`(${term})`, 'gi');
+      return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+    };
+    
+    return `
+      <tr>
+        <td class="upc-cell">${highlightText(record.upc, searchTerm)}</td>
+        <td>${highlightText(record.model, searchTerm)}</td>
+        <td>${highlightText(record.sku, searchTerm)}</td>
+        <td class="editable-cell" onclick="editCell(this, 'qty', '${record.upc}')">${record.qty}</td>
+        <td class="editable-cell" onclick="editCell(this, 'repair', '${record.upc}')">${record.repair}</td>
+        <td class="editable-cell" onclick="editCell(this, 'scrap', '${record.upc}')">${record.scrap}</td>
+        <td>
+          <button class="action-btn" onclick="deleteRecord('${record.upc}')">删除</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 // ====== 编辑单元格 ======
@@ -791,11 +993,153 @@ function refreshData() {
   }, 1000);
 }
 
+// ====== 重复UPC码处理 ======
+function showDuplicateModal(record) {
+  duplicateRecord = record;
+  
+  // 填充模态框信息
+  document.getElementById('duplicateUPC').textContent = record.upc;
+  document.getElementById('duplicateModel').textContent = record.model;
+  document.getElementById('duplicateSKU').textContent = record.sku;
+  document.getElementById('duplicateCurrentQty').textContent = 
+    `正常: ${record.qty} | 待修: ${record.repair} | 报废: ${record.scrap}`;
+  
+  // 显示模态框
+  document.getElementById('duplicateModal').style.display = 'block';
+  
+  // 清空UPC输入框
+  document.getElementById('upcInput').value = '';
+}
+
+function modifyDuplicateQty() {
+  if (!duplicateRecord) return;
+  
+  // 隐藏重复模态框
+  document.getElementById('duplicateModal').style.display = 'none';
+  
+  // 设置当前UPC为重复记录的UPC
+  currentUPC = duplicateRecord.upc;
+  currentModel = duplicateRecord.model;
+  
+  // 预填充当前数量
+  document.getElementById('qtyInput').value = duplicateRecord.qty;
+  document.getElementById('repairInput').value = duplicateRecord.repair;
+  document.getElementById('scrapInput').value = duplicateRecord.scrap;
+  
+  // 显示数量输入模态框
+  document.getElementById('qtyModal').style.display = 'block';
+  document.getElementById('qtyInput').focus();
+  document.getElementById('qtyInput').select();
+}
+
+function cancelDuplicate() {
+  // 隐藏模态框
+  document.getElementById('duplicateModal').style.display = 'none';
+  
+  // 清空UPC输入框
+  document.getElementById('upcInput').value = '';
+  
+  // 重置变量
+  duplicateRecord = null;
+  currentUPC = '';
+  currentModel = '';
+  
+  showToast('已取消操作', 'success');
+}
+
+// ====== 搜索功能 ======
+function searchRecords() {
+  const searchInput = document.getElementById('searchInput');
+  const searchTerm = searchInput.value.trim().toLowerCase();
+  
+  if (!searchTerm) {
+    showToast('请输入搜索关键词', 'warning');
+    return;
+  }
+  
+  if (records.length === 0) {
+    showToast('暂无数据可搜索', 'warning');
+    return;
+  }
+  
+  // 搜索匹配的记录
+  searchResults = records.filter(record => {
+    return record.upc.toLowerCase().includes(searchTerm) ||
+           record.model.toLowerCase().includes(searchTerm) ||
+           record.sku.toLowerCase().includes(searchTerm);
+  });
+  
+  if (searchResults.length === 0) {
+    showToast('未找到匹配的记录', 'warning');
+    return;
+  }
+  
+  isSearchMode = true;
+  updateTable();
+  showToast(`找到 ${searchResults.length} 条匹配记录`, 'success');
+}
+
+function clearSearch() {
+  const searchInput = document.getElementById('searchInput');
+  searchInput.value = '';
+  searchResults = [];
+  isSearchMode = false;
+  updateTable();
+  showToast('搜索已清除', 'success');
+}
+
+// ====== 搜索输入设置 ======
+function setupSearchInput() {
+  const searchInput = document.getElementById('searchInput');
+  let searchTimeout;
+  
+  searchInput.addEventListener('input', function() {
+    const searchTerm = this.value.trim();
+    
+    // 清除之前的定时器
+    clearTimeout(searchTimeout);
+    
+    if (searchTerm.length === 0) {
+      // 如果搜索框为空，清除搜索
+      clearSearch();
+      return;
+    }
+    
+    if (searchTerm.length < 2) {
+      // 至少需要2个字符才开始搜索
+      return;
+    }
+    
+    // 延迟搜索，避免频繁搜索
+    searchTimeout = setTimeout(() => {
+      performSearch(searchTerm);
+    }, 300);
+  });
+}
+
+function performSearch(searchTerm) {
+  if (records.length === 0) {
+    return;
+  }
+  
+  // 搜索匹配的记录
+  searchResults = records.filter(record => {
+    return record.upc.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           record.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           record.sku.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+  
+  isSearchMode = true;
+  updateTable();
+}
+
 // ====== 键盘快捷键 ======
 function setupKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.id === 'upcInput') {
       addRecord();
+    } else if (e.key === 'Enter' && e.target.id === 'searchInput') {
+      searchRecords();
     }
   });
 }
