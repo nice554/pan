@@ -435,7 +435,7 @@
     <div class="form-section">
       <div class="form-group">
         <label for="upcInput">UPC码</label>
-        <input type="text" id="upcInput" placeholder="请输入UPC码" maxlength="12">
+        <input type="text" id="upcInput" placeholder="请输入UPC码">
       </div>
       <button class="btn" onclick="addRecord()">添加记录</button>
       
@@ -690,7 +690,7 @@ function initializeDatabases() {
     "800000000014": "AL300",
     "850028162569": "AL400",
     "800000000016": "AL500",
-    "800000000017": "AL500B",
+    "850028162712": "AL500B",
     "800000000018": "AL600",
     "810139301592": "AD EU",
     "850028162965": "AD900 Lite",
@@ -734,7 +734,7 @@ function initializeDatabases() {
     "810139300885": "Phoenix Lite 3",
     "850028162705": "Phoenix Remote",
     "850028162019": "Phoenix Scope",
-    "810139300069": "RLink J2534",
+    "810139301400": "RLink J2534",
     "800000000063": "RLink Lite",
     "850028162958": "T-DARTS",
     "850028162941": "T-Ninja Pro",
@@ -939,23 +939,35 @@ function initializeDatabases() {
 // ====== 添加记录 ======
 function addRecord() {
   const upcInput = document.getElementById('upcInput');
-  const upc = upcInput.value.trim();
+  let upc = upcInput.value.trim();
   
   if (!upc) {
     showToast('请输入UPC码', 'warning');
     return;
   }
   
-  if (upc.length !== 12) {
-    showToast('UPC码必须是12位数字', 'warning');
+  // 查找数字"8"的位置，然后提取往后12位数字
+  const eightIndex = upc.indexOf('8');
+  if (eightIndex !== -1 && upc.length >= eightIndex + 12) {
+    upc = upc.substring(eightIndex, eightIndex + 12);
+    showToast(`已提取UPC码: ${upc}`, 'success');
+  } else if (eightIndex === -1) {
+    showToast('输入数据中未找到数字8，无法提取UPC码', 'warning');
+    return;
+  } else {
+    showToast('从数字8开始不足12位数字，无法提取完整UPC码', 'warning');
     return;
   }
   
   // 检查UPC码是否在数据库中存在
   if (!modelDB[upc]) {
+    showToast(`UPC码 ${upc} 不在产品数据库中`, 'warning');
     document.getElementById('upcInput').value = '';
     return;
   }
+  
+  // UPC码搜索成功后清除输入框
+  document.getElementById('upcInput').value = '';
   
   // 检查是否已存在
   const existingRecord = records.find(r => r.upc === upc);
